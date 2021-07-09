@@ -35,7 +35,7 @@ type CompletionManager struct {
 	completer Completer
 
 	verticalScroll int
-	wordSeparator  string
+	wordSeparator  []string
 	showAtStart    bool
 }
 

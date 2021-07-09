@@ -27,9 +27,9 @@ func ExampleLastIndexNotByte() {
 }
 
 func ExampleIndexNotAny() {
-	fmt.Println(strings.IndexNotAny("golang", "glo"))
-	fmt.Println(strings.IndexNotAny("golang", "gl"))
-	fmt.Println(strings.IndexNotAny("golang", "golang"))
+	fmt.Println(strings.IndexNotAny("golang", []string{"g", "l", "o"}))
+	fmt.Println(strings.IndexNotAny("golang", []string{"g", "l"}))
+	fmt.Println(strings.IndexNotAny("golang", []string{"golang"}))
 	// Output:
 	// 3
 	// 1
@@ -37,9 +37,9 @@ func ExampleIndexNotAny() {
 }
 
 func ExampleLastIndexNotAny() {
-	fmt.Println(strings.LastIndexNotAny("golang", "agn"))
-	fmt.Println(strings.LastIndexNotAny("golang", "an"))
-	fmt.Println(strings.LastIndexNotAny("golang", "golang"))
+	fmt.Println(strings.LastIndexNotAny("golang", []string{"a", "g", "n"}))
+	fmt.Println(strings.LastIndexNotAny("golang", []string{"a", "n"}))
+	fmt.Println(strings.LastIndexNotAny("golang", []string{"golang"}))
 	// Output:
 	// 2
 	// 5

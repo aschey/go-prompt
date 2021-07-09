@@ -100,27 +100,27 @@ func (d *Document) GetWordAfterCursorWithSpace() string {
 }
 
 // GetWordBeforeCursorUntilSeparator returns the text before the cursor until next separator.
-func (d *Document) GetWordBeforeCursorUntilSeparator(sep string) string {
+func (d *Document) GetWordBeforeCursorUntilSeparator(sep []string) string {
 	x := d.TextBeforeCursor()
 	return x[d.FindStartOfPreviousWordUntilSeparator(sep):]
 }
 
 // GetWordAfterCursorUntilSeparator returns the text after the cursor until next separator.
-func (d *Document) GetWordAfterCursorUntilSeparator(sep string) string {
+func (d *Document) GetWordAfterCursorUntilSeparator(sep []string) string {
 	x := d.TextAfterCursor()
 	return x[:d.FindEndOfCurrentWordUntilSeparator(sep)]
 }
 
 // GetWordBeforeCursorUntilSeparatorIgnoreNextToCursor returns the word before the cursor.
 // Unlike GetWordBeforeCursor, it returns string containing space
-func (d *Document) GetWordBeforeCursorUntilSeparatorIgnoreNextToCursor(sep string) string {
+func (d *Document) GetWordBeforeCursorUntilSeparatorIgnoreNextToCursor(sep []string) string {
 	x := d.TextBeforeCursor()
 	return x[d.FindStartOfPreviousWordUntilSeparatorIgnoreNextToCursor(sep):]
 }
 
 // GetWordAfterCursorUntilSeparatorIgnoreNextToCursor returns the word after the cursor.
 // Unlike GetWordAfterCursor, it returns string containing space
-func (d *Document) GetWordAfterCursorUntilSeparatorIgnoreNextToCursor(sep string) string {
+func (d *Document) GetWordAfterCursorUntilSeparatorIgnoreNextToCursor(sep []string) string {
 	x := d.TextAfterCursor()
 	return x[:d.FindEndOfCurrentWordUntilSeparatorIgnoreNextToCursor(sep)]
 }
@@ -154,13 +154,13 @@ func (d *Document) FindStartOfPreviousWordWithSpace() int {
 
 // FindStartOfPreviousWordUntilSeparator is almost the same as FindStartOfPreviousWord.
 // But this can specify Separator. Return 0 if nothing was found.
-func (d *Document) FindStartOfPreviousWordUntilSeparator(sep string) int {
-	if sep == "" {
+func (d *Document) FindStartOfPreviousWordUntilSeparator(seps []string) int {
+	if len(strings.Join(seps, "")) == 0 {
 		return d.FindStartOfPreviousWord()
 	}
 
 	x := d.TextBeforeCursor()
-	i := strings.LastIndexAny(x, sep)
+	i := istrings.LastIndexAny(x, seps)
 	if i != -1 {
 		return i + 1
 	}
@@ -169,17 +169,17 @@ func (d *Document) FindStartOfPreviousWordUntilSeparator(sep string) int {
 
 // FindStartOfPreviousWordUntilSeparatorIgnoreNextToCursor is almost the same as FindStartOfPreviousWordWithSpace.
 // But this can specify Separator. Return 0 if nothing was found.
-func (d *Document) FindStartOfPreviousWordUntilSeparatorIgnoreNextToCursor(sep string) int {
-	if sep == "" {
+func (d *Document) FindStartOfPreviousWordUntilSeparatorIgnoreNextToCursor(seps []string) int {
+	if len(strings.Join(seps, "")) == 0 {
 		return d.FindStartOfPreviousWordWithSpace()
 	}
 
 	x := d.TextBeforeCursor()
-	end := istrings.LastIndexNotAny(x, sep)
+	end := istrings.LastIndexNotAny(x, seps)
 	if end == -1 {
 		return 0
 	}
-	start := strings.LastIndexAny(x[:end], sep)
+	start := istrings.LastIndexAny(x[:end], seps)
 	if start == -1 {
 		return 0
 	}
@@ -217,13 +217,13 @@ func (d *Document) FindEndOfCurrentWordWithSpace() int {
 
 // FindEndOfCurrentWordUntilSeparator is almost the same as FindEndOfCurrentWord.
 // But this can specify Separator. Return 0 if nothing was found.
-func (d *Document) FindEndOfCurrentWordUntilSeparator(sep string) int {
-	if sep == "" {
+func (d *Document) FindEndOfCurrentWordUntilSeparator(seps []string) int {
+	if len(strings.Join(seps, "")) == 0 {
 		return d.FindEndOfCurrentWord()
 	}
 
 	x := d.TextAfterCursor()
-	i := strings.IndexAny(x, sep)
+	i := istrings.IndexAny(x, seps)
 	if i != -1 {
 		return i
 	}
@@ -232,19 +232,19 @@ func (d *Document) FindEndOfCurrentWordUntilSeparator(sep string) int {
 
 // FindEndOfCurrentWordUntilSeparatorIgnoreNextToCursor is almost the same as FindEndOfCurrentWordWithSpace.
 // But this can specify Separator. Return 0 if nothing was found.
-func (d *Document) FindEndOfCurrentWordUntilSeparatorIgnoreNextToCursor(sep string) int {
-	if sep == "" {
+func (d *Document) FindEndOfCurrentWordUntilSeparatorIgnoreNextToCursor(seps []string) int {
+	if len(strings.Join(seps, "")) == 0 {
 		return d.FindEndOfCurrentWordWithSpace()
 	}
 
 	x := d.TextAfterCursor()
 
-	start := istrings.IndexNotAny(x, sep)
+	start := istrings.IndexNotAny(x, seps)
 	if start == -1 {
 		return len(x)
 	}
 
-	end := strings.IndexAny(x[start:], sep)
+	end := istrings.IndexAny(x[start:], seps)
 	if end == -1 {
 		return len(x)
 	}

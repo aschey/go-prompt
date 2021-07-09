@@ -1,6 +1,8 @@
 package strings
 
-import "unicode/utf8"
+import (
+	"strings"
+)
 
 // IndexNotByte is similar with strings.IndexByte but showing the opposite behavior.
 func IndexNotByte(s string, c byte) int {
@@ -23,80 +25,79 @@ func LastIndexNotByte(s string, c byte) int {
 	return -1
 }
 
-type asciiSet [8]uint32
-
-func (as *asciiSet) notContains(c byte) bool {
-	return (as[c>>5] & (1 << uint(c&31))) == 0
-}
-
-func makeASCIISet(chars string) (as asciiSet, ok bool) {
-	for i := 0; i < len(chars); i++ {
-		c := chars[i]
-		if c >= utf8.RuneSelf {
-			return as, false
+func IndexAny(s string, seps []string) int {
+	first := -1
+	for _, sep := range seps {
+		curFirst := strings.Index(s, sep) + len(sep) - 1
+		if curFirst > -1 && (curFirst < first || first == -1) {
+			first = curFirst
 		}
-		as[c>>5] |= 1 << uint(c&31)
 	}
-	return as, true
+
+	return first
 }
 
 // IndexNotAny is similar with strings.IndexAny but showing the opposite behavior.
-func IndexNotAny(s, chars string) int {
-	if len(chars) > 0 {
-		if len(s) > 8 {
-			if as, isASCII := makeASCIISet(chars); isASCII {
-				for i := 0; i < len(s); i++ {
-					if as.notContains(s[i]) {
-						return i
-					}
-				}
-				return -1
+func IndexNotAny(s string, seps []string) int {
+	if len(strings.Join(seps, "")) == 0 {
+		return -1
+	}
+	i := 0
+	for i < len(s) {
+		found := false
+		for _, sep := range seps {
+			sub := s[i:]
+			if strings.Index(sub, sep) == 0 {
+				i += len(sep)
+				found = true
+				break
 			}
+		}
+		if !found {
+			return i
 		}
 
-	LabelFirstLoop:
-		for i, c := range s {
-			for j, m := range chars {
-				if c != m && j == len(chars)-1 {
-					return i
-				} else if c != m {
-					continue
-				} else {
-					continue LabelFirstLoop
-				}
-			}
-		}
 	}
 	return -1
 }
 
-// LastIndexNotAny is similar with strings.LastIndexAny but showing the opposite behavior.
-func LastIndexNotAny(s, chars string) int {
-	if len(chars) > 0 {
-		if len(s) > 8 {
-			if as, isASCII := makeASCIISet(chars); isASCII {
-				for i := len(s) - 1; i >= 0; i-- {
-					if as.notContains(s[i]) {
-						return i
-					}
-				}
-				return -1
-			}
+func LastIndexAny(s string, seps []string) int {
+	last := -1
+	for _, sep := range seps {
+		if sep == "" {
+			continue
 		}
-	LabelFirstLoop:
-		for i := len(s); i > 0; {
-			r, size := utf8.DecodeLastRuneInString(s[:i])
-			i -= size
-			for j, m := range chars {
-				if r != m && j == len(chars)-1 {
-					return i
-				} else if r != m {
-					continue
-				} else {
-					continue LabelFirstLoop
-				}
-			}
+		curLast := strings.LastIndex(s, sep) + len(sep) - 1
+		if curLast > last {
+			last = curLast
 		}
 	}
-	return -1
+
+	return last
+}
+
+// LastIndexNotAny is similar with strings.LastIndexAny but showing the opposite behavior.
+func LastIndexNotAny(s string, seps []string) int {
+	if len(strings.Join(seps, "")) == 0 {
+		return -1
+	}
+	i := 0
+	last := -1
+	for i < len(s) {
+		found := false
+		for _, sep := range seps {
+			sub := s[i:]
+			if strings.Index(sub, sep) == 0 {
+				i += len(sep)
+				found = true
+				break
+			}
+		}
+		if !found {
+			last = i
+			i += 1
+		}
+
+	}
+	return last
 }
