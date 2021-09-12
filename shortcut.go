@@ -1,6 +1,6 @@
 package prompt
 
-func dummyExecutor(in string) {}
+func dummyExecutor(in string, selected *Suggest) {}
 
 // Input get the input data from the user and return it.
 func Input(prefix string, completer Completer, opts ...Option) string {

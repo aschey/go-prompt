@@ -9,7 +9,7 @@ import (
 )
 
 // Executor is called when user input something text.
-type Executor func(string)
+type Executor func(string, *Suggest)
 
 // ExitChecker is called after user input to check if prompt must stop and exit go-prompt Run loop.
 // User input means: selecting/typing an entry, then, if said entry content matches the ExitChecker function criteria:
@@ -64,7 +64,7 @@ func (p *Prompt) Run() {
 	winSizeCh := make(chan *WinSize)
 	stopHandleSignalCh := make(chan struct{})
 	go p.handleSignals(exitCh, winSizeCh, stopHandleSignalCh)
-
+	var lastChosen *Suggest = nil
 	for {
 		select {
 		case b := <-bufCh:
@@ -81,7 +81,8 @@ func (p *Prompt) Run() {
 				// Unset raw mode
 				// Reset to Blocking mode because returned EAGAIN when still set non-blocking mode.
 				debug.AssertNoError(p.in.TearDown())
-				p.executor(e.input)
+
+				p.executor(e.input, lastChosen)
 
 				p.completion.Update(*p.buf.Document())
 
@@ -97,6 +98,11 @@ func (p *Prompt) Run() {
 				go p.handleSignals(exitCh, winSizeCh, stopHandleSignalCh)
 			} else {
 				p.completion.Update(*p.buf.Document())
+				if p.completion.selected > -1 {
+					lastChosen = &p.completion.tmp[p.completion.selected]
+				} else {
+					lastChosen = nil
+				}
 				p.renderer.Render(p.buf, p.completion)
 			}
 		case w := <-winSizeCh:
