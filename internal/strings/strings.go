@@ -67,10 +67,14 @@ func LastIndexAny(s string, seps []string) int {
 		if sep == "" {
 			continue
 		}
-		curLast := strings.LastIndex(s, sep) + len(sep) - 1
-		if curLast > last {
-			last = curLast
+		lastIndex := strings.LastIndex(s, sep)
+		if lastIndex > -1 {
+			curLast := strings.LastIndex(s, sep) + len(sep) - 1
+			if curLast > last {
+				last = curLast
+			}
 		}
+
 	}
 
 	return last
