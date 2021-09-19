@@ -99,6 +99,8 @@ func (r *Render) renderCompletion(buf *Buffer, completions *CompletionManager) {
 	formatted, width := formatSuggestions(
 		suggestions,
 		int(r.col)-runewidth.StringWidth(prefix)-1, // -1 means a width of scrollbar
+		int(completions.maxTextWidth),
+		int(completions.maxDescriptionWidth),
 	)
 	// +1 means a width of scrollbar.
 	width++
