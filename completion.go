@@ -25,6 +25,7 @@ var (
 type Suggest struct {
 	Text        string
 	Description string
+	Metadata    interface{}
 }
 
 // CompletionManager manages which suggestion is now selected.
