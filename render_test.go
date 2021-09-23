@@ -1,4 +1,3 @@
-//go:build !windows
 // +build !windows
 
 package prompt
@@ -60,7 +59,7 @@ func TestFormatCompletion(t *testing.T) {
 	}
 
 	for _, s := range scenarioTable {
-		ac, width := formatSuggestions(s.completions, s.maxWidth, 0, 0)
+		ac, width := formatSuggestions(s.completions, s.maxWidth)
 		if !reflect.DeepEqual(ac, s.expected) {
 			t.Errorf("Should be %#v, but got %#v", s.expected, ac)
 		}
