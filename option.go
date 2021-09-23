@@ -266,7 +266,6 @@ func OptionSetExitCheckerOnInput(fn ExitChecker) Option {
 	}
 }
 
-// OpyionMaxTextWidth to set the maximum allowed width for the text field
 func OptionMaxTextWidth(width uint16) Option {
 	return func(p *Prompt) error {
 		p.completion.maxTextWidth = width
@@ -274,7 +273,6 @@ func OptionMaxTextWidth(width uint16) Option {
 	}
 }
 
-// OpyionMaxTextWidth to set the maximum allowed width for the desciption field
 func OptionMaxDescriptionWidth(width uint16) Option {
 	return func(p *Prompt) error {
 		p.completion.maxDescriptionWidth = width
