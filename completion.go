@@ -30,10 +30,12 @@ type Suggest struct {
 
 // CompletionManager manages which suggestion is now selected.
 type CompletionManager struct {
-	selected  int // -1 means nothing one is selected.
-	tmp       []Suggest
-	max       uint16
-	completer Completer
+	selected            int // -1 means nothing one is selected.
+	tmp                 []Suggest
+	max                 uint16
+	maxTextWidth        uint16
+	maxDescriptionWidth uint16
+	completer           Completer
 
 	verticalScroll int
 	wordSeparator  []string
@@ -154,17 +156,24 @@ func formatTexts(o []string, max int, prefix, suffix string) (new []string, widt
 	return n, lenPrefix + width + lenSuffix
 }
 
-func formatSuggestions(suggests []Suggest, max int) (new []Suggest, width int) {
+func ellipsize(text string, max int) string {
+	if max > 0 && runewidth.StringWidth(text) > max {
+		return text[:max-3] + "..."
+	}
+	return text
+}
+
+func formatSuggestions(suggests []Suggest, max int, maxTextWidth int, maxDescriptionWidth int) (new []Suggest, width int) {
 	num := len(suggests)
 	new = make([]Suggest, num)
 
 	left := make([]string, num)
 	for i := 0; i < num; i++ {
-		left[i] = suggests[i].Text
+		left[i] = ellipsize(suggests[i].Text, maxTextWidth)
 	}
 	right := make([]string, num)
 	for i := 0; i < num; i++ {
-		right[i] = suggests[i].Description
+		right[i] = ellipsize(suggests[i].Description, maxDescriptionWidth)
 	}
 
 	left, leftWidth := formatTexts(left, max, leftPrefix, leftSuffix)

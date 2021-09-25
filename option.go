@@ -266,6 +266,20 @@ func OptionSetExitCheckerOnInput(fn ExitChecker) Option {
 	}
 }
 
+func OptionMaxTextWidth(width uint16) Option {
+	return func(p *Prompt) error {
+		p.completion.maxTextWidth = width
+		return nil
+	}
+}
+
+func OptionMaxDescriptionWidth(width uint16) Option {
+	return func(p *Prompt) error {
+		p.completion.maxDescriptionWidth = width
+		return nil
+	}
+}
+
 // New returns a Prompt with powerful auto-completion.
 func New(executor Executor, completer Completer, opts ...Option) *Prompt {
 	defaultWriter := NewStdoutWriter()
