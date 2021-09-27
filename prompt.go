@@ -98,7 +98,7 @@ func (p *Prompt) Run() {
 				go p.handleSignals(exitCh, winSizeCh, stopHandleSignalCh)
 			} else {
 				p.completion.Update(*p.buf.Document())
-				if p.completion.selected > -1 {
+				if p.completion.selected > -1 && p.completion.selected < len(p.completion.tmp) {
 					lastChosen = &p.completion.tmp[p.completion.selected]
 				} else {
 					lastChosen = nil
