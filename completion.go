@@ -23,9 +23,10 @@ var (
 
 // Suggest is printed when completing.
 type Suggest struct {
-	Text        string
-	Description string
-	Metadata    interface{}
+	Text           string
+	CompletionText string
+	Description    string
+	Metadata       interface{}
 }
 
 // CompletionManager manages which suggestion is now selected.
@@ -169,7 +170,11 @@ func formatSuggestions(suggests []Suggest, max int, maxTextWidth int, maxDescrip
 
 	left := make([]string, num)
 	for i := 0; i < num; i++ {
-		left[i] = ellipsize(suggests[i].Text, maxTextWidth)
+		text := suggests[i].Text
+		if suggests[i].CompletionText != "" {
+			text = suggests[i].CompletionText
+		}
+		left[i] = ellipsize(text, maxTextWidth)
 	}
 	right := make([]string, num)
 	for i := 0; i < num; i++ {
