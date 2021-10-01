@@ -26,6 +26,7 @@ type Suggest struct {
 	Text           string
 	CompletionText string
 	Description    string
+	Placeholder    string
 	Metadata       interface{}
 }
 

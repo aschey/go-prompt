@@ -211,6 +211,12 @@ func (r *Render) Render(buffer *Buffer, completion *CompletionManager) {
 
 		r.out.SetColor(r.previewSuggestionTextColor, r.previewSuggestionBGColor, false)
 		r.out.WriteStr(suggest.Text)
+		if suggest.Placeholder != "" {
+			r.out.SetColor(r.prefixTextColor, r.prefixBGColor, false)
+			r.out.WriteStr(" " + suggest.Placeholder)
+			r.out.CursorBackward(runewidth.StringWidth(suggest.Placeholder) + 1)
+		}
+
 		r.out.SetColor(DefaultColor, DefaultColor, false)
 		cursor += runewidth.StringWidth(suggest.Text)
 
