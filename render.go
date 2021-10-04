@@ -1,6 +1,7 @@
 package prompt
 
 import (
+	"math"
 	"runtime"
 
 	"github.com/aschey/go-prompt/internal/debug"
@@ -109,6 +110,7 @@ func (r *Render) renderCompletion(buf *Buffer, completions *CompletionManager) {
 	if windowHeight > int(completions.max) {
 		windowHeight = int(completions.max)
 	}
+	showingLast := completions.verticalScroll+windowHeight == len(formatted)
 	formatted = formatted[completions.verticalScroll : completions.verticalScroll+windowHeight]
 	r.prepareArea(windowHeight)
 
@@ -124,10 +126,16 @@ func (r *Render) renderCompletion(buf *Buffer, completions *CompletionManager) {
 	fractionAbove := float64(completions.verticalScroll) / float64(contentHeight)
 
 	scrollbarHeight := int(clamp(float64(windowHeight), 1, float64(windowHeight)*fractionVisible))
-	scrollbarTop := int(float64(windowHeight) * fractionAbove)
+
+	var scrollbarTop int
+	if showingLast {
+		scrollbarTop = int(math.Ceil(float64(windowHeight) * fractionAbove))
+	} else {
+		scrollbarTop = int(math.Floor(float64(windowHeight) * fractionAbove))
+	}
 
 	isScrollThumb := func(row int) bool {
-		return scrollbarTop <= row && row <= scrollbarTop+scrollbarHeight
+		return scrollbarTop <= row && row < scrollbarTop+scrollbarHeight
 	}
 
 	selected := completions.selected - completions.verticalScroll
