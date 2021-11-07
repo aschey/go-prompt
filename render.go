@@ -110,7 +110,7 @@ func (r *Render) renderCompletion(buf *Buffer, completions *CompletionManager) {
 	if windowHeight > int(completions.max) {
 		windowHeight = int(completions.max)
 	}
-	showingLast := completions.verticalScroll+windowHeight == len(formatted)
+
 	formatted = formatted[completions.verticalScroll : completions.verticalScroll+windowHeight]
 	r.prepareArea(windowHeight)
 
@@ -122,17 +122,12 @@ func (r *Render) renderCompletion(buf *Buffer, completions *CompletionManager) {
 
 	contentHeight := len(completions.tmp)
 
-	fractionVisible := float64(windowHeight) / float64(contentHeight)
-	fractionAbove := float64(completions.verticalScroll) / float64(contentHeight)
+	// The zero-based index of the first element that will be shown when the content is scrolled to the bottom
+	lastSegmentStart := float64(contentHeight - windowHeight)
 
-	scrollbarHeight := int(clamp(float64(windowHeight), 1, float64(windowHeight)*fractionVisible))
-
-	var scrollbarTop int
-	if showingLast {
-		scrollbarTop = int(math.Ceil(float64(windowHeight) * fractionAbove))
-	} else {
-		scrollbarTop = int(math.Floor(float64(windowHeight) * fractionAbove))
-	}
+	scrollbarHeight := int(math.Floor(float64(contentHeight) / lastSegmentStart))
+	// Use floor operation to ensure the scrollbar is only at the bottom when the last row is shown
+	scrollbarTop := int(math.Floor(float64(completions.verticalScroll) * (float64(windowHeight-scrollbarHeight) / lastSegmentStart)))
 
 	isScrollThumb := func(row int) bool {
 		return scrollbarTop <= row && row < scrollbarTop+scrollbarHeight
@@ -289,16 +284,5 @@ func (r *Render) toPos(cursor int) (x, y int) {
 func (r *Render) lineWrap(cursor int) {
 	if runtime.GOOS != "windows" && cursor > 0 && cursor%int(r.col) == 0 {
 		r.out.WriteRaw([]byte{'\n'})
-	}
-}
-
-func clamp(high, low, x float64) float64 {
-	switch {
-	case high < x:
-		return high
-	case x < low:
-		return low
-	default:
-		return x
 	}
 }
