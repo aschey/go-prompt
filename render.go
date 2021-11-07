@@ -91,6 +91,8 @@ func (r *Render) renderWindowTooSmall() {
 	r.out.WriteStr("Your console window is too small...")
 }
 
+var prevVerticalScroll = 0
+
 func (r *Render) renderCompletion(buf *Buffer, completions *CompletionManager) {
 	suggestions := completions.GetSuggestions()
 	if len(completions.GetSuggestions()) == 0 {
@@ -123,16 +125,23 @@ func (r *Render) renderCompletion(buf *Buffer, completions *CompletionManager) {
 	contentHeight := len(completions.tmp)
 
 	// The zero-based index of the first element that will be shown when the content is scrolled to the bottom
-	lastSegmentStart := float64(contentHeight - windowHeight)
+	lastSegmentStart := contentHeight - windowHeight
 
-	scrollbarHeight := int(math.Floor(float64(contentHeight) / lastSegmentStart))
-	// Use floor operation to ensure the scrollbar is only at the bottom when the last row is shown
-	scrollbarTop := int(math.Floor(float64(completions.verticalScroll) * (float64(windowHeight-scrollbarHeight) / lastSegmentStart)))
+	scrollbarHeight := int(math.Max(float64(windowHeight-lastSegmentStart), 1))
+	scrollbarPos := float64(completions.verticalScroll) * (float64(windowHeight-scrollbarHeight) / float64(lastSegmentStart))
+
+	// If scrolling up, use ceiling operation to ensure the scrollbar is only at the top when the first row is shown
+	// otherwise use floor operation
+	var scrollbarTop int
+	if prevVerticalScroll > completions.verticalScroll {
+		scrollbarTop = int(math.Ceil(scrollbarPos))
+	} else {
+		scrollbarTop = int(math.Floor(scrollbarPos))
+	}
 
 	isScrollThumb := func(row int) bool {
 		return scrollbarTop <= row && row < scrollbarTop+scrollbarHeight
 	}
-
 	selected := completions.selected - completions.verticalScroll
 	r.out.SetColor(White, Cyan, false)
 	for i := 0; i < windowHeight; i++ {
@@ -169,6 +178,7 @@ func (r *Render) renderCompletion(buf *Buffer, completions *CompletionManager) {
 
 	r.out.CursorUp(windowHeight)
 	r.out.SetColor(DefaultColor, DefaultColor, false)
+	prevVerticalScroll = completions.verticalScroll
 }
 
 // Render renders to the console.
