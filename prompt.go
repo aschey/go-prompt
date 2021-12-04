@@ -66,7 +66,8 @@ func (p *Prompt) Run() {
 	go p.handleSignals(exitCh, winSizeCh, stopHandleSignalCh)
 
 	updateCh := make(chan struct{})
-	go p.updateLoop(updateCh)
+	doneCh := make(chan struct{})
+	go p.updateCompletions(updateCh, doneCh)
 
 	var lastChosen *Suggest = nil
 	for {
@@ -101,7 +102,11 @@ func (p *Prompt) Run() {
 				go p.readBuffer(bufCh, stopReadBufCh)
 				go p.handleSignals(exitCh, winSizeCh, stopHandleSignalCh)
 			} else {
-				updateCh <- struct{}{}
+				select {
+				case updateCh <- struct{}{}:
+				default:
+				}
+
 				if p.completion.selected > -1 && p.completion.selected < len(p.completion.tmp) {
 					lastChosen = &p.completion.tmp[p.completion.selected]
 				} else {
@@ -117,6 +122,8 @@ func (p *Prompt) Run() {
 			p.renderer.BreakLine(p.buf)
 			p.tearDown()
 			os.Exit(code)
+		case <-doneCh:
+			p.renderer.Render(p.buf, p.completion)
 		default:
 			time.Sleep(10 * time.Millisecond)
 		}
@@ -243,11 +250,9 @@ func (p *Prompt) handleASCIICodeBinding(b []byte) bool {
 func (p *Prompt) update(done chan struct{}) {
 	defer func() { done <- struct{}{} }()
 	p.completion.Update(*p.buf.Document())
-	//p.renderer.Render(p.buf, p.completion)
 }
 
-func (p *Prompt) updateLoop(input chan struct{}) {
-	//timer := time.NewTimer(50 * time.Millisecond)
+func (p *Prompt) updateCompletions(input chan struct{}, doneCh chan struct{}) {
 	done := make(chan struct{})
 	pending := make(chan struct{}, 1)
 	running := false
@@ -256,7 +261,7 @@ func (p *Prompt) updateLoop(input chan struct{}) {
 		select {
 		case <-done:
 			running = false
-			//p.renderer.Render(p.buf, p.completion)
+			doneCh <- struct{}{}
 			select {
 			case <-pending:
 				running = true
@@ -264,7 +269,6 @@ func (p *Prompt) updateLoop(input chan struct{}) {
 			default:
 			}
 		case <-input:
-			//p.renderer.Render(p.buf, p.completion)
 			if running {
 				select {
 				case pending <- struct{}{}:
@@ -275,15 +279,6 @@ func (p *Prompt) updateLoop(input chan struct{}) {
 				running = true
 				go p.update(done)
 			}
-			// case <-timer.C:
-			// 	if !running {
-			// 		running = true
-			// 		p.renderer.Render(p.buf, p.completion)
-			// 		go p.update(done)
-			// 	} else {
-			// 		timer.Reset(50 * time.Millisecond)
-			// 	}
-
 		}
 	}
 }

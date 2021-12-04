@@ -65,7 +65,6 @@ func (c *CompletionManager) GetSuggestions() []Suggest {
 func (c *CompletionManager) Reset() {
 	c.selected = -1
 	c.verticalScroll = 0
-	c.Update(*NewDocument())
 }
 
 // Update to update the suggestions.
