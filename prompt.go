@@ -64,6 +64,10 @@ func (p *Prompt) Run() {
 	winSizeCh := make(chan *WinSize)
 	stopHandleSignalCh := make(chan struct{})
 	go p.handleSignals(exitCh, winSizeCh, stopHandleSignalCh)
+
+	updateCh := make(chan struct{})
+	go p.updateLoop(updateCh)
+
 	var lastChosen *Suggest = nil
 	for {
 		select {
@@ -84,7 +88,7 @@ func (p *Prompt) Run() {
 
 				p.executor(e.input, lastChosen)
 
-				p.completion.Update(*p.buf.Document())
+				updateCh <- struct{}{}
 
 				p.renderer.Render(p.buf, p.completion)
 
@@ -97,7 +101,7 @@ func (p *Prompt) Run() {
 				go p.readBuffer(bufCh, stopReadBufCh)
 				go p.handleSignals(exitCh, winSizeCh, stopHandleSignalCh)
 			} else {
-				p.completion.Update(*p.buf.Document())
+				updateCh <- struct{}{}
 				if p.completion.selected > -1 && p.completion.selected < len(p.completion.tmp) {
 					lastChosen = &p.completion.tmp[p.completion.selected]
 				} else {
@@ -107,6 +111,7 @@ func (p *Prompt) Run() {
 			}
 		case w := <-winSizeCh:
 			p.renderer.UpdateWinSize(w)
+			updateCh <- struct{}{}
 			p.renderer.Render(p.buf, p.completion)
 		case code := <-exitCh:
 			p.renderer.BreakLine(p.buf)
@@ -235,39 +240,50 @@ func (p *Prompt) handleASCIICodeBinding(b []byte) bool {
 	return checked
 }
 
-// Input just returns user input text.
-func (p *Prompt) Input() string {
-	defer debug.Teardown()
-	debug.Log("start prompt")
-	p.setUp()
-	defer p.tearDown()
+func (p *Prompt) update(done chan struct{}) {
+	defer func() { done <- struct{}{} }()
+	p.completion.Update(*p.buf.Document())
+	//p.renderer.Render(p.buf, p.completion)
+}
 
-	if p.completion.showAtStart {
-		p.completion.Update(*p.buf.Document())
-	}
-
-	p.renderer.Render(p.buf, p.completion)
-	bufCh := make(chan []byte, 128)
-	stopReadBufCh := make(chan struct{})
-	go p.readBuffer(bufCh, stopReadBufCh)
+func (p *Prompt) updateLoop(input chan struct{}) {
+	//timer := time.NewTimer(50 * time.Millisecond)
+	done := make(chan struct{})
+	pending := make(chan struct{}, 1)
+	running := false
 
 	for {
 		select {
-		case b := <-bufCh:
-			if shouldExit, e := p.feed(b); shouldExit {
-				p.renderer.BreakLine(p.buf)
-				stopReadBufCh <- struct{}{}
-				return ""
-			} else if e != nil {
-				// Stop goroutine to run readBuffer function
-				stopReadBufCh <- struct{}{}
-				return e.input
-			} else {
-				p.completion.Update(*p.buf.Document())
-				p.renderer.Render(p.buf, p.completion)
+		case <-done:
+			running = false
+			//p.renderer.Render(p.buf, p.completion)
+			select {
+			case <-pending:
+				running = true
+				go p.update(done)
+			default:
 			}
-		default:
-			time.Sleep(10 * time.Millisecond)
+		case <-input:
+			//p.renderer.Render(p.buf, p.completion)
+			if running {
+				select {
+				case pending <- struct{}{}:
+				default:
+				}
+
+			} else {
+				running = true
+				go p.update(done)
+			}
+			// case <-timer.C:
+			// 	if !running {
+			// 		running = true
+			// 		p.renderer.Render(p.buf, p.completion)
+			// 		go p.update(done)
+			// 	} else {
+			// 		timer.Reset(50 * time.Millisecond)
+			// 	}
+
 		}
 	}
 }
