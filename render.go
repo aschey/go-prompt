@@ -99,9 +99,15 @@ func (r *Render) renderCompletion(buf *Buffer, completions *CompletionManager) {
 		return
 	}
 	prefix := r.getCurrentPrefix()
+
+	maxWidth := int(r.col) - runewidth.StringWidth(prefix) - 1 // -1 means a width of scrollbar
+	if runtime.GOOS == "windows" {
+		// Workaround for Windows being screwy
+		maxWidth -= len(buf.Text())
+	}
 	formatted, width := formatSuggestions(
 		suggestions,
-		int(r.col)-runewidth.StringWidth(prefix)-1, // -1 means a width of scrollbar
+		maxWidth,
 		int(completions.maxTextWidth),
 		int(completions.maxDescriptionWidth),
 	)

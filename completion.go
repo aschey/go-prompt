@@ -158,7 +158,7 @@ func formatTexts(o []string, max int, prefix, suffix string) (new []string, widt
 }
 
 func ellipsize(text string, max int) string {
-	if max > 0 && runewidth.StringWidth(text) > max {
+	if max > 3 && runewidth.StringWidth(text) > max {
 		return text[:max-3] + "..."
 	}
 	return text
