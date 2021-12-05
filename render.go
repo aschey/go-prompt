@@ -103,7 +103,15 @@ func (r *Render) renderCompletion(buf *Buffer, completions *CompletionManager) {
 	maxWidth := int(r.col) - runewidth.StringWidth(prefix) - 1 // -1 means a width of scrollbar
 	if runtime.GOOS == "windows" {
 		// Workaround for Windows being screwy
-		maxWidth -= len(buf.Text())
+		var subtractWidth int
+		if completions.selected > -1 {
+			subtractWidth = len(completions.tmp[completions.selected].CompletionText)
+		} else {
+			subtractWidth = len(buf.Document().CurrentLine())
+		}
+
+		maxWidth -= (subtractWidth + len(prefix))
+
 	}
 	formatted, width := formatSuggestions(
 		suggestions,
