@@ -240,20 +240,20 @@ func (r *Render) Render(buffer *Buffer, completion *CompletionManager) {
 		r.out.WriteStr(suggest.Text)
 
 		rest := buffer.Document().TextAfterCursor()
-		if suggest.Placeholder != "" && len(rest) == 0 {
+		if suggest.Placeholder != "" {
 			r.out.SetColor(r.prefixTextColor, r.prefixBGColor, false)
 			r.out.WriteStr(" " + suggest.Placeholder)
+			r.out.EraseEndOfLine()
 			r.out.CursorBackward(runewidth.StringWidth(suggest.Placeholder) + 1)
+		} else {
+			r.out.EraseEndOfLine()
 		}
 
 		r.out.SetColor(DefaultColor, DefaultColor, false)
 		cursor += runewidth.StringWidth(suggest.Text)
 
-		r.out.WriteStr(rest)
 		cursor += runewidth.StringWidth(rest)
 		r.lineWrap(cursor)
-
-		cursor = r.backward(cursor, runewidth.StringWidth(rest))
 	}
 	r.previousCursor = cursor
 }
