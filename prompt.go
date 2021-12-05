@@ -2,7 +2,6 @@ package prompt
 
 import (
 	"bytes"
-	"os"
 	"time"
 
 	"github.com/aschey/go-prompt/internal/debug"
@@ -43,7 +42,7 @@ type Exec struct {
 }
 
 // Run starts prompt.
-func (p *Prompt) Run() {
+func (p *Prompt) Run() int {
 	p.skipTearDown = false
 	defer debug.Teardown()
 	debug.Log("start prompt")
@@ -67,22 +66,23 @@ func (p *Prompt) Run() {
 
 	updateCh := make(chan struct{})
 	doneCh := make(chan struct{})
-	go p.updateCompletions(updateCh, doneCh)
+	stopUpdateCh := make(chan struct{})
+	go p.updateCompletions(updateCh, doneCh, stopUpdateCh)
+
+	defer func() {
+		p.renderer.BreakLine(p.buf)
+		stopReadBufCh <- struct{}{}
+		stopHandleSignalCh <- struct{}{}
+		stopUpdateCh <- struct{}{}
+	}()
 
 	var lastChosen *Suggest = nil
 	for {
 		select {
 		case b := <-bufCh:
 			if shouldExit, e := p.feed(b); shouldExit {
-				p.renderer.BreakLine(p.buf)
-				stopReadBufCh <- struct{}{}
-				stopHandleSignalCh <- struct{}{}
-				return
+				return 0
 			} else if e != nil {
-				// Stop goroutine to run readBuffer function
-				stopReadBufCh <- struct{}{}
-				stopHandleSignalCh <- struct{}{}
-
 				// Unset raw mode
 				// Reset to Blocking mode because returned EAGAIN when still set non-blocking mode.
 				debug.AssertNoError(p.in.TearDown())
@@ -95,7 +95,7 @@ func (p *Prompt) Run() {
 
 				if p.exitChecker != nil && p.exitChecker(e.input, true) {
 					p.skipTearDown = true
-					return
+					return 0
 				}
 				// Set raw mode
 				debug.AssertNoError(p.in.Setup())
@@ -119,9 +119,7 @@ func (p *Prompt) Run() {
 			updateCh <- struct{}{}
 			p.renderer.Render(p.buf, p.completion)
 		case code := <-exitCh:
-			p.renderer.BreakLine(p.buf)
-			p.tearDown()
-			os.Exit(code)
+			return code
 		case <-doneCh:
 			p.renderer.Render(p.buf, p.completion)
 		default:
@@ -252,7 +250,7 @@ func (p *Prompt) update(done chan struct{}) {
 	p.completion.Update(*p.buf.Document())
 }
 
-func (p *Prompt) updateCompletions(input chan struct{}, doneCh chan struct{}) {
+func (p *Prompt) updateCompletions(inputCh chan struct{}, doneCh chan struct{}, stopCh chan struct{}) {
 	done := make(chan struct{})
 	pending := make(chan struct{}, 1)
 	running := false
@@ -268,7 +266,7 @@ func (p *Prompt) updateCompletions(input chan struct{}, doneCh chan struct{}) {
 				go p.update(done)
 			default:
 			}
-		case <-input:
+		case <-inputCh:
 			if running {
 				select {
 				case pending <- struct{}{}:
@@ -279,6 +277,8 @@ func (p *Prompt) updateCompletions(input chan struct{}, doneCh chan struct{}) {
 				running = true
 				go p.update(done)
 			}
+		case <-stopCh:
+			return
 		}
 	}
 }
