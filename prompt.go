@@ -83,6 +83,9 @@ func (p *Prompt) Run() int {
 			if shouldExit, e := p.feed(b); shouldExit {
 				return 0
 			} else if e != nil {
+				// Stop goroutine to run readBuffer function
+				stopReadBufCh <- struct{}{}
+				stopHandleSignalCh <- struct{}{}
 				// Unset raw mode
 				// Reset to Blocking mode because returned EAGAIN when still set non-blocking mode.
 				debug.AssertNoError(p.in.TearDown())
