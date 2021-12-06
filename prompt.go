@@ -65,7 +65,7 @@ func (p *Prompt) Run() int {
 	go p.handleSignals(exitCh, winSizeCh, stopHandleSignalCh)
 
 	updateCh := make(chan struct{})
-	doneCh := make(chan struct{})
+	doneCh := make(chan []Suggest)
 	stopUpdateCh := make(chan struct{})
 	go p.updateCompletions(updateCh, doneCh, stopUpdateCh)
 
@@ -120,7 +120,8 @@ func (p *Prompt) Run() int {
 			p.renderer.Render(p.buf, p.completion)
 		case code := <-exitCh:
 			return code
-		case <-doneCh:
+		case results := <-doneCh:
+			p.completion.SetResults(results)
 			p.renderer.Render(p.buf, p.completion)
 		default:
 			time.Sleep(10 * time.Millisecond)
@@ -245,25 +246,24 @@ func (p *Prompt) handleASCIICodeBinding(b []byte) bool {
 	return checked
 }
 
-func (p *Prompt) update(done chan struct{}) {
-	defer func() { done <- struct{}{} }()
-	p.completion.Update(*p.buf.Document())
+func (p *Prompt) update(resultsCh chan []Suggest) {
+	resultsCh <- p.completion.Completer(*p.buf.Document())
 }
 
-func (p *Prompt) updateCompletions(inputCh chan struct{}, doneCh chan struct{}, stopCh chan struct{}) {
-	done := make(chan struct{})
+func (p *Prompt) updateCompletions(inputCh chan struct{}, doneCh chan []Suggest, stopCh chan struct{}) {
+	resultsCh := make(chan []Suggest)
 	pending := make(chan struct{}, 1)
 	running := false
 
 	for {
 		select {
-		case <-done:
+		case res := <-resultsCh:
 			running = false
-			doneCh <- struct{}{}
+			doneCh <- res
 			select {
 			case <-pending:
 				running = true
-				go p.update(done)
+				go p.update(resultsCh)
 			default:
 			}
 		case <-inputCh:
@@ -275,7 +275,7 @@ func (p *Prompt) updateCompletions(inputCh chan struct{}, doneCh chan struct{}, 
 
 			} else {
 				running = true
-				go p.update(done)
+				go p.update(resultsCh)
 			}
 		case <-stopCh:
 			return

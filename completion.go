@@ -69,7 +69,15 @@ func (c *CompletionManager) Reset() {
 
 // Update to update the suggestions.
 func (c *CompletionManager) Update(in Document) {
-	c.tmp = c.completer(in)
+	c.SetResults(c.Completer(in))
+}
+
+func (c *CompletionManager) Completer(in Document) []Suggest {
+	return c.completer(in)
+}
+
+func (c *CompletionManager) SetResults(suggests []Suggest) {
+	c.tmp = suggests
 }
 
 // Previous to select the previous suggestion item.
