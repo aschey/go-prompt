@@ -6,6 +6,10 @@ import (
 	prompt "github.com/aschey/go-prompt"
 )
 
+func executor(in string, suggest *prompt.Suggest) {
+	fmt.Println("Your input: " + in)
+}
+
 func completer(in prompt.Document) []prompt.Suggest {
 	s := []prompt.Suggest{
 		{Text: "users", Description: "Store the username and age"},
@@ -17,12 +21,11 @@ func completer(in prompt.Document) []prompt.Suggest {
 }
 
 func main() {
-	in := prompt.Input(">>> ", completer,
+	p := prompt.New(
+		executor,
+		completer,
+		prompt.OptionPrefix(">>> "),
 		prompt.OptionTitle("sql-prompt"),
-		prompt.OptionHistory([]string{"SELECT * FROM users;"}),
-		prompt.OptionPrefixTextColor(prompt.Yellow),
-		prompt.OptionPreviewSuggestionTextColor(prompt.Blue),
-		prompt.OptionSelectedSuggestionBGColor(prompt.LightGray),
-		prompt.OptionSuggestionBGColor(prompt.DarkGray))
-	fmt.Println("Your input: " + in)
+	)
+	p.Run()
 }

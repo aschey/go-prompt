@@ -6,7 +6,7 @@ import (
 	prompt "github.com/aschey/go-prompt"
 )
 
-func executor(in string) {
+func executor(in string, suggest *prompt.Suggest) {
 	fmt.Println("Your input: " + in)
 }
 
