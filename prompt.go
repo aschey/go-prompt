@@ -34,6 +34,7 @@ type Prompt struct {
 	completionOnDown  bool
 	exitChecker       ExitChecker
 	skipTearDown      bool
+	statusbarChan     chan string
 }
 
 // Exec is the struct contains user input context.
@@ -125,6 +126,9 @@ func (p *Prompt) Run() int {
 			return code
 		case results := <-doneCh:
 			p.completion.SetResults(results)
+			p.renderer.Render(p.buf, p.completion)
+		case statusBar := <-p.statusbarChan:
+			p.renderer.statusBar = statusBar
 			p.renderer.Render(p.buf, p.completion)
 		default:
 			time.Sleep(10 * time.Millisecond)

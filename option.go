@@ -282,6 +282,13 @@ func OptionMaxDescriptionWidth(width uint16) Option {
 	}
 }
 
+func OptionStatusbarSignal(statusbarChan chan string) Option {
+	return func(p *Prompt) error {
+		p.statusbarChan = statusbarChan
+		return nil
+	}
+}
+
 // New returns a Prompt with powerful auto-completion.
 func New(executor Executor, completer Completer, opts ...Option) *Prompt {
 	defaultWriter := NewStdoutWriter()

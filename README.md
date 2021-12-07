@@ -28,6 +28,7 @@ Fixes and changes in this fork:
 - Improve long line handling on Windows terminal (from [this commit](https://github.com/rbergman/go-prompt/commit/fa57cdc8094003d5ad7e93dcdbdded9fb168cce9))
 - Update all dependencies
 - Change `overwrite` option to overwrite entire line
+- Add status bar. Largely taken from [here](https://github.com/daichi-m/go-prompt/pull/1)
 
 ```go
 package main
