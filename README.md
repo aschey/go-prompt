@@ -11,22 +11,23 @@ making it easier to build cross-platform command line tools using Go.
 This is a fork from the original [here](https://github.com/c-bata/go-prompt) with several breaking changes
 
 Fixes and changes in this fork:
-- Fix slice out of range error when using `buffer.InsertText()` with the `overwrite` option set to true (from [this PR](https://github.com/c-bata/go-prompt/pull/241))
+
 - Fix errors where the selected index can be greater than the number of suggestions
 - Support setting max widths for text and description so long text doesn't take up the entire screem
 - Allow setting multiple separator words (breaking change)
-- Try to avoid panicking in PosixParser if there's no /dev/tty (from [this PR](https://github.com/c-bata/go-prompt/pull/185)) 
+- Try to avoid panicking in PosixParser if there's no /dev/tty (from [this PR](https://github.com/c-bata/go-prompt/pull/185))
 - Add placeholder field to show a usage example for suggestions
-- Add completion field to show different text for suggestion and selection  
+- Add completion field to show different text for suggestion and selection
 - Add metadata field to attach arbitrary metadata to a suggestion
 - Pass selected suggestion to executor (breaking change)
 - Instead of calling `os.Exit` on SIGTERM, return control to the calling app to decide how to handle the result (breaking change)
 - When choosing a selection, overwrite the entire text intead of keeping text past the cursor
 - Run completer function asynchronously. This allows for making expensive actions like calling an API in the completer without blocking the user from typing
-- Fix some issues with long completion text on Windows due to Windows not handling text overflow as well as Linux
 - Fix scrollbar height calculations so that the scrollbar never shows that it's at the very top or the very bottom unless there are no more items to scroll to
 - Remove deprecated `Input` function (breaking change)
-
+- Improve long line handling on Windows terminal (from [this commit](https://github.com/rbergman/go-prompt/commit/fa57cdc8094003d5ad7e93dcdbdded9fb168cce9))
+- Update all dependencies
+- Change `overwrite` option to overwrite entire line
 
 ```go
 package main

@@ -47,15 +47,7 @@ func (b *Buffer) InsertText(v string, overwrite bool, moveCursor bool) {
 	oc := b.cursorPosition
 
 	if overwrite {
-		overwritten := string(or[oc:])
-		if len(overwritten) >= oc+len(v) {
-			overwritten = string(or[oc : oc+len(v)])
-		}
-		if strings.Contains(overwritten, "\n") {
-			i := strings.IndexAny(overwritten, "\n")
-			overwritten = overwritten[:i]
-		}
-		b.setText(string(or[:oc]) + v + string(or[oc+len(overwritten):]))
+		b.setText(string(or[:oc]) + v)
 	} else {
 		b.setText(string(or[:oc]) + v + string(or[oc:]))
 	}

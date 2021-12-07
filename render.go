@@ -2,6 +2,7 @@ package prompt
 
 import (
 	"math"
+	"os"
 	"runtime"
 
 	"github.com/aschey/go-prompt/internal/debug"
@@ -101,18 +102,7 @@ func (r *Render) renderCompletion(buf *Buffer, completions *CompletionManager) {
 	prefix := r.getCurrentPrefix()
 
 	maxWidth := int(r.col) - runewidth.StringWidth(prefix) - 1 // -1 means a width of scrollbar
-	if runtime.GOOS == "windows" {
-		// Workaround for Windows being screwy
-		var subtractWidth int
-		if completions.selected > -1 {
-			subtractWidth = len(completions.tmp[completions.selected].CompletionText)
-		} else {
-			subtractWidth = len(buf.Document().CurrentLine())
-		}
 
-		maxWidth -= (subtractWidth + len(prefix))
-
-	}
 	formatted, width := formatSuggestions(
 		suggestions,
 		maxWidth,
@@ -306,7 +296,13 @@ func (r *Render) toPos(cursor int) (x, y int) {
 }
 
 func (r *Render) lineWrap(cursor int) {
-	if runtime.GOOS != "windows" && cursor > 0 && cursor%int(r.col) == 0 {
+	if runtime.GOOS == "windows" {
+		// WT_SESSION indicates Windows Terminal, which is more rational than the older cmd or ps terminals
+		if _, ok := os.LookupEnv("WT_SESSION"); !ok {
+			return
+		}
+	}
+	if cursor > 0 && cursor%int(r.col) == 0 {
 		r.out.WriteRaw([]byte{'\n'})
 	}
 }
