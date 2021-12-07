@@ -274,7 +274,7 @@ func OptionMaxTextWidth(width uint16) Option {
 	}
 }
 
-// OptionMaxTextWidth to set the maximum allowed width for the desciption field
+// OptionMaxDescriptionWidth to set the maximum allowed width for the desciption field
 func OptionMaxDescriptionWidth(width uint16) Option {
 	return func(p *Prompt) error {
 		p.completion.maxDescriptionWidth = width
