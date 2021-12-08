@@ -8,7 +8,7 @@ import (
 )
 
 // Executor is called when user input something text.
-type Executor func(string, *Suggest)
+type Executor func(string, *Suggest, []Suggest)
 
 // ExitChecker is called after user input to check if prompt must stop and exit go-prompt Run loop.
 // User input means: selecting/typing an entry, then, if said entry content matches the ExitChecker function criteria:
@@ -99,7 +99,7 @@ func (p *Prompt) Run() int {
 				// Reset to Blocking mode because returned EAGAIN when still set non-blocking mode.
 				debug.AssertNoError(p.in.TearDown())
 
-				p.executor(e.input, lastChosen)
+				p.executor(e.input, lastChosen, p.completion.tmp)
 
 				requestPromptUpdate()
 
