@@ -69,11 +69,14 @@ func (c *CompletionManager) Reset() {
 
 // Update to update the suggestions.
 func (c *CompletionManager) Update(in Document) {
-	c.SetResults(c.Completer(in))
+	promptCh := make(chan []Suggest, 1)
+	c.Completer(in, promptCh)
+	suggests := <-promptCh
+	c.SetResults(suggests)
 }
 
-func (c *CompletionManager) Completer(in Document) []Suggest {
-	return c.completer(in)
+func (c *CompletionManager) Completer(in Document, promptCh chan []Suggest) {
+	c.completer(in, promptCh)
 }
 
 func (c *CompletionManager) SetResults(suggests []Suggest) {

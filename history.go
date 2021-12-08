@@ -37,6 +37,12 @@ func (h *History) Older(buf *Buffer) (new *Buffer, changed bool) {
 	return new, true
 }
 
+func (h *History) Reset() {
+	if len(h.tmp) > 0 && h.selected > -1 {
+		h.selected = len(h.tmp) - 1
+	}
+}
+
 // Newer saves a buffer of current line and get a buffer of next line by up-arrow.
 // The changes of line buffers are stored until new history is created.
 func (h *History) Newer(buf *Buffer) (new *Buffer, changed bool) {

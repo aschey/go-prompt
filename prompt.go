@@ -18,7 +18,7 @@ type Executor func(string, *Suggest)
 type ExitChecker func(in string, breakline bool) bool
 
 // Completer should return the suggest item from Document.
-type Completer func(Document) []Suggest
+type Completer func(Document, chan []Suggest)
 
 // Prompt is core struct of go-prompt.
 type Prompt struct {
@@ -65,17 +65,25 @@ func (p *Prompt) Run() int {
 	stopHandleSignalCh := make(chan struct{})
 	go p.handleSignals(exitCh, winSizeCh, stopHandleSignalCh)
 
-	updateCh := make(chan struct{})
-	doneCh := make(chan []Suggest)
-	stopUpdateCh := make(chan struct{})
-	go p.updateCompletions(updateCh, doneCh, stopUpdateCh)
-
 	defer func() {
 		p.renderer.BreakLine(p.buf)
 		stopReadBufCh <- struct{}{}
 		stopHandleSignalCh <- struct{}{}
-		stopUpdateCh <- struct{}{}
 	}()
+
+	updating := false
+	pending := false
+
+	resultsCh := make(chan []Suggest, 1)
+	requestPromptUpdate := func() {
+		if !updating {
+			p.completion.Completer(*p.buf.Document(), resultsCh)
+			updating = true
+		} else {
+			pending = true
+		}
+
+	}
 
 	var lastChosen *Suggest = nil
 	for {
@@ -93,7 +101,7 @@ func (p *Prompt) Run() int {
 
 				p.executor(e.input, lastChosen)
 
-				updateCh <- struct{}{}
+				requestPromptUpdate()
 
 				p.renderer.Render(p.buf, p.completion)
 
@@ -106,11 +114,7 @@ func (p *Prompt) Run() int {
 				go p.readBuffer(bufCh, stopReadBufCh)
 				go p.handleSignals(exitCh, winSizeCh, stopHandleSignalCh)
 			} else {
-				select {
-				case updateCh <- struct{}{}:
-				default:
-				}
-
+				requestPromptUpdate()
 				if p.completion.selected > -1 && p.completion.selected < len(p.completion.tmp) {
 					lastChosen = &p.completion.tmp[p.completion.selected]
 				} else {
@@ -120,13 +124,18 @@ func (p *Prompt) Run() int {
 			}
 		case w := <-winSizeCh:
 			p.renderer.UpdateWinSize(w)
-			updateCh <- struct{}{}
+			requestPromptUpdate()
 			p.renderer.Render(p.buf, p.completion)
 		case code := <-exitCh:
 			return code
-		case results := <-doneCh:
+		case results := <-resultsCh:
+			updating = false
 			p.completion.SetResults(results)
 			p.renderer.Render(p.buf, p.completion)
+			if pending {
+				requestPromptUpdate()
+				pending = false
+			}
 		case statusBar := <-p.statusbarChan:
 			p.renderer.statusBar = statusBar
 			p.renderer.Render(p.buf, p.completion)
@@ -141,10 +150,10 @@ func (p *Prompt) feed(b []byte) (shouldExit bool, exec *Exec) {
 	p.buf.lastKeyStroke = key
 	// completion
 	completing := p.completion.Completing()
-	p.handleCompletionKeyBinding(key, completing)
 
 	switch key {
 	case Enter, ControlJ, ControlM:
+		p.handleCompletionKeyBinding(key, completing)
 		p.renderer.BreakLine(p.buf)
 
 		exec = &Exec{input: p.buf.Text()}
@@ -153,6 +162,7 @@ func (p *Prompt) feed(b []byte) (shouldExit bool, exec *Exec) {
 			p.history.Add(exec.input)
 		}
 	case ControlC:
+		p.handleCompletionKeyBinding(key, completing)
 		p.renderer.BreakLine(p.buf)
 		p.buf = NewBuffer()
 		p.history.Clear()
@@ -160,25 +170,37 @@ func (p *Prompt) feed(b []byte) (shouldExit bool, exec *Exec) {
 		if !completing { // Don't use p.completion.Completing() because it takes double operation when switch to selected=-1.
 			if newBuf, changed := p.history.Older(p.buf); changed {
 				p.buf = newBuf
+			} else {
+				p.handleCompletionKeyBinding(key, completing)
 			}
+			return
 		}
+		p.handleCompletionKeyBinding(key, completing)
 	case Down, ControlN:
 		if !completing { // Don't use p.completion.Completing() because it takes double operation when switch to selected=-1.
 			if newBuf, changed := p.history.Newer(p.buf); changed {
 				p.buf = newBuf
+			} else {
+				p.handleCompletionKeyBinding(key, completing)
 			}
 			return
 		}
+		p.handleCompletionKeyBinding(key, completing)
+
 	case ControlD:
 		if p.buf.Text() == "" {
 			shouldExit = true
 			return
 		}
 	case NotDefined:
+		p.handleCompletionKeyBinding(key, completing)
 		if p.handleASCIICodeBinding(b) {
 			return
 		}
 		p.buf.InsertText(string(b), false, true)
+	default:
+		p.history.Reset()
+		p.handleCompletionKeyBinding(key, completing)
 	}
 
 	shouldExit = p.handleKeyBinding(key)
@@ -251,43 +273,6 @@ func (p *Prompt) handleASCIICodeBinding(b []byte) bool {
 		}
 	}
 	return checked
-}
-
-func (p *Prompt) update(resultsCh chan []Suggest) {
-	resultsCh <- p.completion.Completer(*p.buf.Document())
-}
-
-func (p *Prompt) updateCompletions(inputCh chan struct{}, doneCh chan []Suggest, stopCh chan struct{}) {
-	resultsCh := make(chan []Suggest)
-	pending := make(chan struct{}, 1)
-	running := false
-
-	for {
-		select {
-		case res := <-resultsCh:
-			running = false
-			doneCh <- res
-			select {
-			case <-pending:
-				running = true
-				go p.update(resultsCh)
-			default:
-			}
-		case <-inputCh:
-			if running {
-				select {
-				case pending <- struct{}{}:
-				default:
-				}
-
-			} else {
-				running = true
-				go p.update(resultsCh)
-			}
-		case <-stopCh:
-			return
-		}
-	}
 }
 
 func (p *Prompt) readBuffer(bufCh chan []byte, stopCh chan struct{}) {
