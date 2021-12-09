@@ -99,7 +99,7 @@ func livePrefix() (string, bool) {
 	return ctx.url.String() + "> ", true
 }
 
-func executor(in string, suggest *prompt.Suggest) {
+func executor(in string, suggest *prompt.Suggest, suggestions []prompt.Suggest) {
 	in = strings.TrimSpace(in)
 
 	var method, body string
@@ -155,12 +155,13 @@ func executor(in string, suggest *prompt.Suggest) {
 	}
 }
 
-func completer(in prompt.Document) []prompt.Suggest {
+func completer(in prompt.Document, returnChan chan []prompt.Suggest) {
 	w := in.GetWordBeforeCursor()
 	if w == "" {
-		return []prompt.Suggest{}
+		returnChan <- []prompt.Suggest{}
+		return
 	}
-	return prompt.FilterHasPrefix(suggestions, w, true)
+	returnChan <- prompt.FilterHasPrefix(suggestions, w, true)
 }
 
 func main() {

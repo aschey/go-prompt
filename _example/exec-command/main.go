@@ -7,7 +7,7 @@ import (
 	prompt "github.com/aschey/go-prompt"
 )
 
-func executor(t string, suggest *prompt.Suggest) {
+func executor(t string, suggest *prompt.Suggest, suggestions []prompt.Suggest) {
 	if t == "bash" {
 		cmd := exec.Command("bash")
 		cmd.Stdin = os.Stdin
@@ -17,8 +17,8 @@ func executor(t string, suggest *prompt.Suggest) {
 	}
 }
 
-func completer(t prompt.Document) []prompt.Suggest {
-	return []prompt.Suggest{
+func completer(t prompt.Document, returnChan chan []prompt.Suggest) {
+	returnChan <- []prompt.Suggest{
 		{Text: "bash"},
 	}
 }
