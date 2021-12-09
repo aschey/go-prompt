@@ -4,7 +4,6 @@ import (
 	"math"
 	"os"
 	"runtime"
-	"strings"
 
 	"github.com/aschey/go-prompt/internal/debug"
 	runewidth "github.com/mattn/go-runewidth"
@@ -262,34 +261,8 @@ func (r *Render) renderStatusBar() {
 	if r.statusBar != "" {
 		r.out.CursorDown(int(r.row))
 		r.out.CursorBackward(int(r.col))
-		fs, _ := formatTexts([]string{r.statusBar}, int(r.col-2), "", "")
-		if len(fs) == 0 {
-			return
-		}
-		fs = padTexts(fs, " ", int(r.col))
-		r.out.WriteStr(fs[0])
+		r.out.WriteStr(r.statusBar)
 	}
-}
-
-func padTexts(orig []string, pad string, length int) []string {
-	pl := len(pad)
-	if pl <= 0 {
-		return orig
-	}
-	if len(orig) == 0 {
-		tot, mod := length/pl, length%pl
-		return []string{strings.Repeat(pad, tot) + pad[0:mod]}
-	}
-	padded := make([]string, 0, len(orig))
-
-	for _, o := range orig {
-		fillLen := length - len(o)
-		tot, mod := fillLen/pl, fillLen%pl
-		p := strings.Repeat(pad, tot) + pad[0:mod]
-		padded = append(padded, o+p)
-	}
-	return padded
-
 }
 
 // BreakLine to break line.
