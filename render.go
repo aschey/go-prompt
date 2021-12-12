@@ -261,7 +261,7 @@ func (r *Render) renderStatusBar() {
 	if r.statusBar != "" {
 		r.out.CursorDown(int(r.row))
 		r.out.CursorBackward(int(r.col))
-		r.out.WriteStr(r.statusBar)
+		r.out.WriteRawStr(r.statusBar)
 	}
 }
 
