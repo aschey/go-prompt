@@ -119,7 +119,12 @@ func (r *Render) renderCompletion(buf *Buffer, completions *CompletionManager) {
 	}
 
 	formatted = formatted[completions.verticalScroll : completions.verticalScroll+windowHeight]
-	r.prepareArea(windowHeight)
+	if r.statusBar == "" {
+		r.prepareArea(windowHeight)
+	} else {
+		// reserve extra line for status bar
+		r.prepareArea(windowHeight + 1)
+	}
 
 	cursor := runewidth.StringWidth(prefix) + runewidth.StringWidth(buf.Document().TextBeforeCursor())
 	x, _ := r.toPos(cursor)
@@ -252,6 +257,9 @@ func (r *Render) Render(buffer *Buffer, completion *CompletionManager) {
 }
 
 func (r *Render) renderStatusBar() {
+	if r.statusBar == "" {
+		return
+	}
 	r.out.SaveCursor()
 	defer func() {
 		r.out.UnSaveCursor()
