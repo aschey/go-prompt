@@ -122,8 +122,8 @@ func (r *Render) renderCompletion(buf *Buffer, completions *CompletionManager) {
 	if r.statusBar == "" {
 		r.prepareArea(windowHeight)
 	} else {
-		// reserve extra line for status bar
-		r.prepareArea(windowHeight + 1)
+		// reserve extra line for status bar and another to have separation
+		r.prepareArea(windowHeight + 2)
 	}
 
 	cursor := runewidth.StringWidth(prefix) + runewidth.StringWidth(buf.Document().TextBeforeCursor())
